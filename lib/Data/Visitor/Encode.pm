@@ -9,7 +9,7 @@ use Squirrel; # only because Data::Visitor uses it :)
 extends 'Data::Visitor';
 use Encode();
 
-our $VERSION = '0.10000';
+our $VERSION = '0.10001';
 
 has 'visit_method' => (
     is => 'rw',
