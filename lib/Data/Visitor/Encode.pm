@@ -1,0 +1,433 @@
+# $Id$
+#
+# Copyright (c) 2006 Daisuke Maki <daisuke@endeworks.jp>
+# All rights reserved.
+
+package Data::Visitor::Encode;
+use strict;
+use warnings;
+use base qw(Data::Visitor);
+use Encode();
+use Scalar::Util qw(reftype blessed);
+
+BEGIN
+{
+    our $VERSION = '0.09000';
+    __PACKAGE__->mk_accessors('visit_method', 'extra_args');
+}
+
+sub _object { ref $_[0] ? $_[0] : $_[0]->new }
+
+sub visit_glob
+{
+    return $_[1];
+}
+
+sub visit_scalar
+{
+    my ($self, $ref) = @_;
+
+    my $ret = $self->visit_value($$ref);
+    if ($ret) {
+        return \$ret;
+    }
+    return undef;
+}
+
+# We care about the hash key as well, so override
+sub visit_hash
+{
+    my ($self, $hash) = @_;
+
+    my %map = map {
+        (
+            $self->visit_value($_),
+            $self->visit($hash->{$_})
+        )
+    } keys %$hash;
+    return \%map;
+}
+
+sub visit_object
+{
+    my ($self, $data) = @_;
+
+    my $type = lc (reftype $data);
+    my $method = "visit_$type";
+    my $ret    = $self->$method($data);
+
+    return bless $ret, blessed $data;
+}
+
+sub visit_value
+{
+    my ($self, $data) = @_;
+
+    # return as-is if undefined
+    return $data unless defined $data;
+
+    # return as-is if no method
+    my $method = $self->visit_method();
+    return $data unless $method;
+
+    # return if unimplemented
+    $method = "do_$method";
+    return $data if (! $self->can($method));
+
+    return $self->$method($data);
+}
+
+sub do_utf8_on
+{
+    my $self = shift;
+    my $data = shift;
+
+    Encode::_utf8_on($data);
+    return $data;
+}
+
+sub do_utf8_off
+{
+    my $self = shift;
+    my $data = shift;
+
+    Encode::_utf8_off($data);
+    return $data;
+}
+
+sub utf8_on
+{
+    my $self = _object(shift);
+    $self->visit_method('utf8_on');
+    $self->visit($_[0]);
+}
+
+sub utf8_off
+{
+    my $self = _object(shift);
+    $self->visit_method('utf8_off');
+    $self->visit($_[0]);
+}
+
+sub do_encode
+{
+    my $self = shift;
+    my $data = shift;
+    return Encode::encode($self->extra_args, $data);
+}
+
+sub do_decode
+{
+    my $self = shift;
+    my $data = shift;
+    return Encode::decode($self->extra_args, $data);
+}
+
+sub decode
+{
+    my $self = _object(shift);
+    my $code = shift;
+
+    $self->extra_args($code);
+    $self->visit_method('decode');
+    $self->visit($_[0]);
+}
+
+sub encode
+{
+    my $self = _object(shift);
+    my $code = shift;
+
+    $self->extra_args($code);
+    $self->visit_method('encode');
+    $self->visit($_[0]);
+}
+
+sub do_decode_utf8
+{
+    my $self = shift;
+    my $data = shift;
+    return Encode::decode_utf8($data);
+}
+
+sub decode_utf8
+{
+    my $self = _object(shift);
+    $self->visit_method('decode_utf8');
+    $self->visit($_[0]);
+}
+
+sub do_encode_utf8
+{
+    my $self = shift;
+    my $data = shift;
+    return Encode::encode_utf8($data);
+}
+
+sub encode_utf8
+{
+    my $self = _object(shift);
+    my $enc  = $_[1];
+    $self->visit_method('encode_utf8');
+    $self->visit($_[0]);
+}
+
+sub do_h2z
+{
+    my $self = shift;
+    my $data = shift;
+
+    my $is_euc = ($self->extra_args =~ /^euc-jp$/i);
+    my $utf8_on = Encode::is_utf8($data);
+    my $euc  =
+        $is_euc ?
+            $data :
+        $utf8_on ?
+            Encode::encode('euc-jp', $data) :
+            Encode::encode('euc-jp', Encode::decode($self->extra_args, $data))
+    ;
+
+    Encode::JP::H2Z::h2z(\$euc);
+
+    return 
+        $is_euc ?
+            $euc :
+        $utf8_on ?
+            Encode::decode('euc-jp', $euc) :
+            Encode::encode($self->extra_args, Encode::decode('euc-jp', $euc))
+    ;   
+}
+
+sub h2z
+{
+    my $self = _object(shift);
+
+    require Encode::JP::H2Z;
+    $self->visit_method('h2z');
+    $self->extra_args($_[0]);
+    $self->visit($_[1]);
+}
+
+sub do_z2h
+{
+    my $self = shift;
+    my $data = shift;
+
+    my $is_euc = ($self->extra_args =~ /^euc-jp$/i);
+    my $utf8_on = Encode::is_utf8($data);
+    my $euc  =
+        $is_euc ?
+            $data :
+        $utf8_on ?
+            Encode::encode('euc-jp', $data) :
+            Encode::encode('euc-jp', Encode::decode($self->extra_args, $data))
+    ;
+
+    Encode::JP::H2Z::z2h(\$euc);
+        
+    return 
+        $is_euc ?
+            $euc :
+        $utf8_on ?
+            Encode::decode('euc-jp', $euc) :
+            Encode::encode($self->extra_args, Encode::decode('euc-jp', $euc))
+    ;   
+}
+
+sub z2h
+{
+    my $self = _object(shift);
+    require Encode::JP::H2Z;
+    $self->visit_method('z2h');
+    $self->extra_args($_[0]);
+    $self->visit($_[1]);
+}
+
+1;
+
+__END__
+
+=head1 NAME
+
+Data::Visitor::Encode - Encode/Decode Values In A Structure
+
+=head1 SYNOPSIS
+
+  use Data::Visitor::Encode;
+
+  my $dev = Data::Visitor::Encode->new();
+  my %hash = (...); # assume data is in Perl native Unicode
+  $dev->encode('euc-jp', \%hash); # now strings are in euc-jp
+  $dev->decode('euc-jp', \%hash); # now strings are back in unicode
+  $dev->utf8_on(\%hash);
+  $dev->utf8_off(\%hash);
+
+=head1 DESCRIPTION
+
+Data::Visitor::Encode visits each node of a structure, and returns a new
+structure with each node's encoding (or similar action). If you ever wished
+to do a bulk encode/decode of the contents of a structure, then this
+module may help you.
+
+Starting from 0.09000, you can directly use the methods without instantiating
+the object:
+
+  Data::Visitor::Encode->encode('euc-jp', $obj);
+  # instead of Data::Visitor::Encode->new->encod('euc-jp', $obj)
+
+=head1 METHODS
+
+=head2 utf8_on
+
+  $dev->utf8_on(\%hash);
+  $dev->utf8_on(\@list);
+  $dev->utf8_on(\$scalar);
+  $dev->utf8_on($scalar);
+  $dev->utf8_on($object);
+
+Returns a structure containing nodes with utf8 flag on
+
+=head2 utf8_off
+
+  $dev->utf8_off(\%hash);
+  $dev->utf8_off(\@list);
+  $dev->utf8_off(\$scalar);
+  $dev->utf8_off($scalar);
+  $dev->utf8_off($object);
+
+Returns a structure containing nodes with utf8 flag off
+
+=head2 encode
+
+  $dev->encode($encoding, \%hash   [, CHECK]);
+  $dev->encode($encoding, \@list   [, CHECK]);
+  $dev->encode($encoding, \$scalar [, CHECK]);
+  $dev->encode($encoding, $scalar  [, CHECK]);
+  $dev->encode($encoding, $object  [, CHECK]);
+
+Returns a structure containing nodes which are encoded in the specified
+encoding.
+
+=head2 decode
+
+  $dev->decode($encoding, \%hash);
+  $dev->decode($encoding, \@list);
+  $dev->decode($encoding, \$scalar);
+  $dev->decode($encoding, $scalar);
+  $dev->decode($encoding, $object);
+
+Returns a structure containing nodes which are decoded from the specified
+encoding.
+
+=head2 decode_utf8
+
+  $dev->decode_utf8(\%hash);
+  $dev->decode_utf8(\@list);
+  $dev->decode_utf8(\$scalar);
+  $dev->decode_utf8($scalar);
+  $dev->decode_utf8($object);
+
+Returns a structure containing nodes which have been processed through
+decode_utf8.
+
+=head2 encode_utf8
+
+  $dev->encode_utf8(\%hash);
+  $dev->encode_utf8(\@list);
+  $dev->encode_utf8(\$scalar);
+  $dev->encode_utf8($scalar);
+  $dev->encode_utf8($object);
+
+Returns a structure containing nodes which have been processed through
+encode_utf8.
+
+=head2 h2z
+
+=head2 z2h
+
+  $dev->h2z($encoding, \%hash);
+  $dev->h2z($encoding, \@list);
+  $dev->h2z($encoding, \$scalar);
+  $dev->h2z($encoding, $scalar);
+  $dev->h2z($encoding, $object);
+
+h2z and z2h are Japanese-only methods (hey, I'm a little biased like that).
+They perform the task of mapping half-width katakana to full-width katakana
+and vice-versa.
+
+These methods use Encode::JP::H2Z, which requires us to go from the
+original encoding to euc-jp and then back. There are other modules that are 
+built to handle exactly this problem, which may come out to be faster than 
+using Encode.pm's somewhat hidden Encode::JP::H2Z, but I really don't care
+for adding another dependency to this module other than Encode.pm, so
+here it is.
+
+If you're significantly worried about performance, I'll gladly accept patches
+as long as there are no prerequisite modules or the prerequisite is optional.
+
+=head2 decode_utf8
+
+  $dev->decode_utf8(\%hash);
+  $dev->decode_utf8(\@list);
+  $dev->decode_utf8(\$scalar);
+  $dev->decode_utf8($scalar);
+  $dev->decode_utf8($object);
+
+Returns a structure containing nodes which have been processed through
+decode_utf8.
+
+=head2 encode_utf8
+
+  $dev->encode_utf8(\%hash);
+  $dev->encode_utf8(\@list);
+  $dev->encode_utf8(\$scalar);
+  $dev->encode_utf8($scalar);
+  $dev->encode_utf8($object);
+
+Returns a structure containing nodes which have been processed through
+encode_utf8.
+
+=head2 do_decode
+
+=head2 do_encode
+
+=head2 do_utf8_off
+
+=head2 do_utf8_on
+
+=head2 do_h2z
+
+=head2 do_z2h
+
+=head2 do_encode_utf8
+
+=head2 do_decode_utf8
+
+=head2 visit_glob
+
+=head2 visit_hash
+
+=head2 visit_object
+
+=head2 visit_scalar
+
+=head2 visit_value
+
+These methods are private. Only use if it you are subclassing this class.
+
+=head1 AUTHOR
+
+Copyright (c) 2007 Daisuke Maki E<lt>daisuke@endeworks.jpE<gt>
+
+=head1 SEE ALSO
+
+L<Data::Visitor|Data::Visitor>, L<Encode|Encode>
+
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See http://www.perl.com/perl/misc/Artistic.html
+
+=cut
