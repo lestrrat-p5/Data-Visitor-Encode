@@ -4,7 +4,7 @@
 # All rights reserved.
 
 package Data::Visitor::Encode;
-use Mouse; # only because Data::Visitor uses it :)
+use Squirrel; # only because Data::Visitor uses it :)
 
 extends 'Data::Visitor';
 use Encode();
