@@ -9,7 +9,7 @@ name 'Data-Visitor-Encode';
 all_from 'lib/Data/Visitor/Encode.pm';
 
 requires 'Encode';
-requires 'Data::Visitor';
+requires 'Data::Visitor', 0.18;
 requires 'Scalar::Util';
 build_requires 'Test::More';
 
