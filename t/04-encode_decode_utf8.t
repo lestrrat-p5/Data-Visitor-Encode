@@ -1,6 +1,8 @@
 use strict;
-use utf8;
-use Test::More tests => 61;
+# use utf8;
+use lib "t/lib";
+use Test::More tests => 15;
+use Test::Data::Visitor::Encode;
 use Encode;
 
 BEGIN
@@ -8,78 +10,31 @@ BEGIN
     use_ok("Data::Visitor::Encode");
 }
 
-do 't/checkfunc.pl';
+{
+    use utf8;
 
-my $nihongo = "日本語";
-my $aiueo   = "あいうえお";
-my %source;
-my %visited;
+    # hashref 
+    encode_utf8_ok( { "日本語" => "あいうえお" }, "encode_utf8 on hashref" );
 
-%source = ($nihongo => $aiueo);
+    # arrayref
+    encode_utf8_ok( [ "日本語", "あいうえお" ], "encode_utf8 on arrayref" );
 
-my $ev = Data::Visitor::Encode->new();
+    # scalarref
+    encode_utf8_ok( \"日本語", "encode_utf8 on scalarref" );
 
-my $check_flag_off = make_check_closure(
-    sub {
-        return ! Encode::is_utf8($_[0]);
-    }, "utf8 flag off"
-);
-my $check_flag_on = make_check_closure(
-    sub {
-        return Encode::is_utf8($_[0]);
-    }, "utf8 flag on"
-);
+    encode_utf8_ok( bless({ "日本語" => "あいえうお" }, "Hoge"), "encode_utf8 on object" );
+}
 
-# Hash
-%source = (
-    $nihongo => $aiueo, 
-    nested_hashref   => { $nihongo => $aiueo },
-    nested_arrayref  => [ $nihongo, $aiueo ],
-    nested_scalarref => \$nihongo,
-);
-my $visited = $ev->decode_utf8(\%source);
-$check_flag_on->($visited);
+{
+    # hashref 
+    decode_utf8_ok( { "日本語" => "あいうえお" }, "decode_utf8 on hashref" );
 
-$visited = $ev->encode_utf8($visited);
-$check_flag_off->($visited);
+    # arrayref
+    decode_utf8_ok( [ "日本語", "あいうえお" ], "decode_utf8 on arrayref" );
 
-# List
-my @source = (
-    $nihongo, $aiueo,
-    { $nihongo => $aiueo },
-    [ $nihongo, $aiueo ],
-    \$nihongo
-);
-$visited = $ev->decode_utf8(\@source);
-$check_flag_on->($visited);
+    # scalarref
+    decode_utf8_ok( \"日本語", "decode_utf8 on scalarref" );
 
-$visited = $ev->encode_utf8($visited);
-$check_flag_off->($visited);
+    decode_utf8_ok( bless({ "日本語" => "あいえうお" }, "Hoge"), "decode_utf8 on object" );
+}
 
-# Scalar (Ref)
-my $source = \$nihongo;
-$visited = $ev->decode_utf8($source);
-$check_flag_on->($visited);
-
-$visited = $ev->encode_utf8($visited);
-$check_flag_off->($visited);
-
-# Scalar
-$source = $nihongo;
-$visited = $ev->decode_utf8($source);
-$check_flag_on->($visited);
-
-$visited = $ev->encode_utf8($visited);
-$check_flag_off->($visited);
-
-# Object
-my $class = 'DVETestObject';
-$visited = $ev->decode_utf8(bless \%source, $class);
-$check_flag_on->($visited);
-isa_ok($visited, $class);
-
-$visited = $ev->encode_utf8($visited);
-$check_flag_off->($visited);
-isa_ok($visited, $class);
-
-1;
