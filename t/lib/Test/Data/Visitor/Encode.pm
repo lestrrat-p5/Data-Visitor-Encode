@@ -27,7 +27,7 @@ sub encode_utf8_ok {
     my ($data, $title) = @_;
 
     my $dve = Data::Visitor::Encode->new();
-    $dve->encode_utf8($data);
+    $data = $dve->encode_utf8($data);
 
     Data::Visitor::Callback->new(
         ignore_return_values => 1,
@@ -40,7 +40,7 @@ sub encode_utf8_ok {
             } while ($caller =~ /Data::Visitor/);
 
             local $Test::Builder::Level = $Test::Builder::Level + $i;
-            ok(Encode::is_utf8($_[1], 1), Encode::encode_utf8("value $_[1] is not utf8 for '$title'"));
+            ok(!Encode::is_utf8($_[1], 1), "value $_[1] is not utf8 for '$title'");
         }
     )->visit($data);
 }
@@ -49,7 +49,7 @@ sub decode_utf8_ok {
     my ($data, $title) = @_;
 
     my $dve = Data::Visitor::Encode->new();
-    $dve->decode_utf8($data);
+    $data = $dve->decode_utf8($data);
 
     Data::Visitor::Callback->new(
         ignore_return_values => 1,
@@ -62,7 +62,7 @@ sub decode_utf8_ok {
             } while ($caller =~ /Data::Visitor/);
 
             local $Test::Builder::Level = $Test::Builder::Level + $i;
-            ok(! Encode::is_utf8($_[1], 1), "value $_[1] is utf8 for '$title'");
+            ok(Encode::is_utf8($_[1], 1), Encode::encode_utf8("value $_[1] is utf8 for '$title'"));
         }
     )->visit($data);
 }
