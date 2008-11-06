@@ -11,7 +11,7 @@ use Test::Exception;
 sub import {
     my $caller = caller(1);
 
-    foreach my $method qw(decode_ok encode_ok decode_utf8_ok encode_utf8_ok) {
+    foreach my $method qw(decode_ok encode_ok decode_utf8_ok encode_utf8_ok utf8_on_ok utf8_off_ok) {
         no strict 'refs';
         *{"${caller}::${method}"} = \&{$method};
     }
@@ -69,8 +69,10 @@ sub decode_ok {
 sub encode_utf8_ok {
     my ($data, $title) = @_;
 
-    my $dve = Data::Visitor::Encode->new();
-    $dve->encode_utf8($data);
+    lives_ok {
+        my $dve = Data::Visitor::Encode->new();
+        $dve->encode_utf8($data);
+    } "encode_utf8 ok";
 
     Data::Visitor::Callback->new(
         ignore_return_values => 1,
@@ -91,8 +93,10 @@ sub encode_utf8_ok {
 sub decode_utf8_ok {
     my ($data, $title) = @_;
 
-    my $dve = Data::Visitor::Encode->new();
-    $dve->decode_utf8($data);
+    lives_ok {
+        my $dve = Data::Visitor::Encode->new();
+        $dve->decode_utf8($data);
+    } "decode_utf8 ok";
 
     Data::Visitor::Callback->new(
         ignore_return_values => 1,
@@ -106,6 +110,54 @@ sub decode_utf8_ok {
 
             local $Test::Builder::Level = $Test::Builder::Level + $i;
             ok(is_utf8($_[1], 1), encode_utf8("value $_[1] is utf8 for '$title'"));
+        }
+    )->visit($data);
+}
+
+sub utf8_on_ok {
+    my ($data, $title) = @_;
+
+    lives_ok {
+        my $dve = Data::Visitor::Encode->new();
+        $dve->utf8_on($data);
+    } "utf8_on ok";
+
+    Data::Visitor::Callback->new(
+        ignore_return_values => 1,
+        object => "visit_ref",
+        plain_value => sub {
+            my $caller;
+            my $i = 1;
+            do {
+                $caller = caller($i++);
+            } while ($caller =~ /Data::Visitor/);
+
+            local $Test::Builder::Level = $Test::Builder::Level + $i;
+            ok(is_utf8($_[1], 1), encode_utf8("value $_[1] is utf8 for '$title'"));
+        }
+    )->visit($data);
+}
+
+sub utf8_off_ok {
+    my ($data, $title) = @_;
+
+    lives_ok {
+        my $dve = Data::Visitor::Encode->new();
+        $dve->utf8_off($data);
+    } "utf8_off ok";
+
+    Data::Visitor::Callback->new(
+        ignore_return_values => 1,
+        object => "visit_ref",
+        plain_value => sub {
+            my $caller;
+            my $i = 1;
+            do {
+                $caller = caller($i++);
+            } while ($caller =~ /Data::Visitor/);
+
+            local $Test::Builder::Level = $Test::Builder::Level + $i;
+            ok(! is_utf8($_[1], 1), "value $_[1] is NOT utf8 for '$title'");
         }
     )->visit($data);
 }

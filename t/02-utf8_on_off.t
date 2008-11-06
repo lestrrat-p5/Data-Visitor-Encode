@@ -1,74 +1,40 @@
 use strict;
-use utf8;
-use Test::More tests => 61;
+# use utf8;
+use lib "t/lib";
+use Test::More tests => 23;
+use Test::Data::Visitor::Encode;
+use Encode;
 
 BEGIN
 {
     use_ok("Data::Visitor::Encode");
 }
 
-do 't/checkfunc.pl';
+{
+    use utf8;
 
-my $nihongo = "日本語";
-my $aiueo   = "あいうえお";
-my %source;
-my %visited;
+    # hashref 
+    utf8_on_ok( { "日本語" => "あいうえお" }, "utf8_on on hashref" );
 
-my $ev = 'Data::Visitor::Encode';
+    # arrayref
+    utf8_on_ok( [ "日本語", "あいうえお" ], "utf8_on on arrayref" );
 
-my $check_utf8_on = make_check_closure(sub { Encode::is_utf8($_[0]) }, "utf8");
-my $check_utf8_off = make_check_closure(sub { ! Encode::is_utf8($_[0]) }, "NOT utf8");
+    # scalarref
+    utf8_on_ok( \"日本語", "utf8_on on scalarref" );
 
-# Hash
-%source = (
-    $nihongo => $aiueo, 
-    nested_hashref   => { $nihongo => $aiueo },
-    nested_arrayref  => [ $nihongo, $aiueo ],
-    nested_scalarref => \$nihongo,
-);
-my $visited = $ev->utf8_off(\%source);
-$check_utf8_off->($visited);
+    utf8_on_ok( bless({ "日本語" => "あいえうお" }, "Hoge"), "utf8_on on object" );
+}
 
-$visited = $ev->utf8_on($visited);
-$check_utf8_on->($visited);
+{
+    # hashref 
+    utf8_off_ok( { "日本語" => "あいうえお" }, "utf8_off on hashref" );
 
-# List
-my @source = (
-    $nihongo, $aiueo,
-    { $nihongo => $aiueo },
-    [ $nihongo, $aiueo ],
-    \$nihongo
-);
-$visited = $ev->utf8_off(\@source);
-$check_utf8_off->($visited);
+    # arrayref
+    utf8_off_ok( [ "日本語", "あいうえお" ], "utf8_off on arrayref" );
 
-$visited = $ev->utf8_on($visited);
-$check_utf8_on->($visited);
+    # scalarref
+    utf8_off_ok( \"日本語", "utf8_off on scalarref" );
 
-# Scalar (Ref)
-my $source = \$nihongo;
-$visited = $ev->utf8_off($source);
-$check_utf8_off->($visited);
+    utf8_off_ok( bless({ "日本語" => "あいえうお" }, "Hoge"), "utf8_off on object" );
+}
 
-$visited = $ev->utf8_on($visited);
-$check_utf8_on->($visited);
-
-# Scalar
-$source = $nihongo;
-$visited = $ev->utf8_off($source);
-$check_utf8_off->($visited);
-
-$visited = $ev->utf8_on($visited);
-$check_utf8_on->($visited);
-
-# Object
-my $class = 'DVETestObject';
-$visited = $ev->utf8_off(bless \%source, $class);
-$check_utf8_off->($visited);
-isa_ok($visited, $class);
-
-$visited = $ev->utf8_on($visited);
-$check_utf8_on->($visited);
-isa_ok($visited, $class);
-
-1;

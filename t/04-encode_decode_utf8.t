@@ -1,7 +1,7 @@
 use strict;
 # use utf8;
 use lib "t/lib";
-use Test::More tests => 15;
+use Test::More tests => 23;
 use Test::Data::Visitor::Encode;
 use Encode;
 
