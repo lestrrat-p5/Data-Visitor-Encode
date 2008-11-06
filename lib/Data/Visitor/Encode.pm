@@ -20,6 +20,8 @@ has 'extra_args' => (
     is => 'rw',
 );
 
+__PACKAGE__->meta->make_immutable;
+
 no Mouse;
 use Scalar::Util qw(reftype blessed);
 
