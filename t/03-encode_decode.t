@@ -1,6 +1,8 @@
 use strict;
 use utf8;
-use Test::More tests => 61;
+use lib "t/lib";
+use Test::More tests => 19;
+use Test::Data::Visitor::Encode;
 use Encode;
 
 BEGIN
@@ -8,80 +10,31 @@ BEGIN
     use_ok("Data::Visitor::Encode");
 }
 
-do 't/checkfunc.pl';
+{
+    my $euc_nihongo = encode('euc-jp', "日本語");
+    my $euc_aiueo   = encode('euc-jp', "あいうえお");
+    # hashref 
+    decode_ok( 'euc-jp', { $euc_nihongo => $euc_aiueo }, "encode on hashref" );
 
-my $nihongo = "日本語";
-my $aiueo   = "あいうえお";
-my %source;
-my %visited;
+    # arrayref
+    decode_ok( 'euc-jp', [ $euc_nihongo, $euc_aiueo ], "encode on arrayref" );
 
-%source = ($nihongo => $aiueo);
+    # scalarref
+    decode_ok( 'euc-jp', \$euc_nihongo, "encode on scalarref" );
 
-my $ev = Data::Visitor::Encode->new();
+    decode_ok( 'euc-jp', bless({ $euc_nihongo => $euc_aiueo}, "Hoge"), "encode on object" );
+}
 
-my $check_euc_jp = make_check_closure(
-    sub {
-        eval { Encode::decode('euc-jp', $_[0], Encode::FB_CROAK()) };
-        return !$@;
-    }, "euc-jp"
-);
-my $check_utf8 = make_check_closure(
-    sub {
-        eval { Encode::encode('utf-8', $_[0], Encode::FB_CROAK()) };
-        return !$@
-    }, "utf8"
-);
+{
+    # hashref 
+    encode_ok( 'euc-jp', { "日本語" => "あいうえお" }, "decode on hashref" );
 
-# Hash
-%source = (
-    $nihongo => $aiueo, 
-    nested_hashref   => { $nihongo => $aiueo },
-    nested_arrayref  => [ $nihongo, $aiueo ],
-    nested_scalarref => \$nihongo,
-);
-my $visited = $ev->encode('euc-jp', \%source);
-$check_euc_jp->($visited);
+    # arrayref
+    encode_ok( 'euc-jp', [ "日本語", "あいうえお" ], "decode on arrayref" );
 
-$visited = $ev->decode('euc-jp', $visited);
-$check_utf8->($visited);
+    # scalarref
+    encode_ok( 'euc-jp', \"日本語", "decode on scalarref" );
 
-# List
-my @source = (
-    $nihongo, $aiueo,
-    { $nihongo => $aiueo },
-    [ $nihongo, $aiueo ],
-    \$nihongo
-);
-$visited = $ev->encode('euc-jp', \@source);
-$check_euc_jp->($visited);
+    encode_ok( 'euc-jp', bless({ "日本語" => "あいえうお" }, "Hoge"), "decode on object" );
+}
 
-$visited = $ev->decode('euc-jp', $visited);
-$check_utf8->($visited);
-
-# Scalar (Ref)
-my $source = \$nihongo;
-$visited = $ev->encode('euc-jp', $source);
-$check_euc_jp->($visited);
-
-$visited = $ev->decode('euc-jp', $visited);
-$check_utf8->($visited);
-
-# Scalar
-$source = $nihongo;
-$visited = $ev->encode('euc-jp', $source);
-$check_euc_jp->($visited);
-
-$visited = $ev->decode('euc-jp', $visited);
-$check_utf8->($visited);
-
-# Object
-my $class = 'DVETestObject';
-$visited = $ev->encode('euc-jp', bless \%source, $class);
-$check_euc_jp->($visited);
-isa_ok($visited, $class);
-
-$visited = $ev->decode('euc-jp', $visited);
-$check_utf8->($visited);
-isa_ok($visited, $class);
-
-1;
