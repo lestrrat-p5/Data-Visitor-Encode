@@ -1,6 +1,23 @@
 Changes
 =======
 
+0.10003 - 17 Feb 2009
+    - Removed check for "do_$method". They should exist!
+    - Opt to use Encode::Encoding object rather than calling encode()/decode()
+      all the time. Suggested by tokuhirom.
+
+      Below is the result of benchmarking legacy (no find_encnoding) and
+      current version:
+
+                        Rate        legacy find_encoding
+        legacy        6321/s            --          -20%
+        find_encoding 7899/s           25%            --
+
+                             Rate        legacy_z2h find_encoding_z2h
+        legacy_z2h        14164/s                --              -25%
+        find_encoding_z2h 18939/s               34%                --
+
+
 0.10002 - 06 Nov 2008
   - Somewhere along the way, we lost the ability to change the actual
     structure that was passed in (or was it broken to begin with?).
