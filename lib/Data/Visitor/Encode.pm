@@ -9,7 +9,7 @@ use Squirrel; # only because Data::Visitor uses it :)
 extends 'Data::Visitor';
 use Encode();
 
-our $VERSION = '0.10002';
+our $VERSION = '0.10003';
 
 has 'visit_method' => (
     is => 'rw',
@@ -81,7 +81,7 @@ sub visit_value
 
     # return if unimplemented
     $method = "do_$method";
-    return $data if (! $self->can($method));
+#    return $data if (! $self->can($method));
 
     return $self->$method($data);
 }
@@ -120,12 +120,12 @@ sub utf8_off
 
 sub do_encode {
     my $self = shift;
-    return $_[0] = Encode::encode($self->extra_args, $_[0]);
+    return $_[0] = $self->{__encoding}->encode($_[0]);
 }
 
 sub do_decode {
     my $self = shift;
-    return $_[0] = Encode::decode($self->extra_args, $_[0]);
+    return $_[0] = $self->{__encoding}->decode($_[0]);
 }
 
 sub decode
@@ -133,6 +133,11 @@ sub decode
     my $self = _object(shift);
     my $code = shift;
 
+    my $encoding = Encode::find_encoding( $code );
+    if (! $encoding) {
+        Carp::confess("Could not find encoding by the name of $encoding");
+    }
+    local $self->{__encoding} = $encoding;
     $self->extra_args($code);
     $self->visit_method('decode');
     $_[0] = $self->visit($_[0]);
@@ -143,6 +148,11 @@ sub encode
     my $self = _object(shift);
     my $code = shift;
 
+    my $encoding = Encode::find_encoding( $code );
+    if (! $encoding) {
+        Carp::confess("Could not find encoding by the name of $encoding");
+    }
+    local $self->{__encoding} = $encoding;
     $self->extra_args($code);
     $self->visit_method('encode');
     $_[0] = $self->visit($_[0]);
@@ -180,12 +190,14 @@ sub do_h2z
 
     my $is_euc = ($self->extra_args =~ /^euc-jp$/i);
     my $utf8_on = Encode::is_utf8($_[0]);
+    my $euc_encoding = $self->{__euc};
+    my $encoding = $self->{__encoding};
     my $euc  =
         $is_euc ?
             $_[0] :
         $utf8_on ?
-            Encode::encode('euc-jp', $_[0]) :
-            Encode::encode('euc-jp', Encode::decode($self->extra_args, $_[0]))
+            $euc_encoding->encode($_[0]) :
+            $euc_encoding->encode($encoding->decode($_[0]))
     ;
 
     Encode::JP::H2Z::h2z(\$euc);
@@ -194,19 +206,28 @@ sub do_h2z
         $is_euc ?
             $euc :
         $utf8_on ?
-            Encode::decode('euc-jp', $euc) :
-            Encode::encode($self->extra_args, Encode::decode('euc-jp', $euc))
+            $euc_encoding->decode($euc) :
+            $encoding->encode($euc_encoding->decode($euc))
     );   
 }
 
 sub h2z
 {
     my $self = _object(shift);
+    my $code = shift;
 
     require Encode::JP::H2Z;
+
+    local $self->{__euc} = Encode::find_encoding('euc-jp');
+    my $encoding = Encode::find_encoding( $code );
+    if (! $encoding) {
+        Carp::confess("Could not find encoding by the name of $encoding");
+    }
+    local $self->{__encoding} = $encoding;
+
     $self->visit_method('h2z');
-    $self->extra_args($_[0]);
-    $self->visit($_[1]);
+    $self->extra_args($code);
+    $self->visit($_[0]);
 }
 
 sub do_z2h
@@ -215,12 +236,14 @@ sub do_z2h
 
     my $is_euc = ($self->extra_args =~ /^euc-jp$/i);
     my $utf8_on = Encode::is_utf8($_[0]);
+    my $euc_encoding = $self->{__euc};
+    my $encoding = $self->{__encoding};
     my $euc  =
         $is_euc ?
             $_[0] :
         $utf8_on ?
-            Encode::encode('euc-jp', $_[0]) :
-            Encode::encode('euc-jp', Encode::decode($self->extra_args, $_[0]))
+            $euc_encoding->encode($_[0]) :
+            $euc_encoding->encode($encoding->decode($_[0]))
     ;
 
     Encode::JP::H2Z::z2h(\$euc);
@@ -229,18 +252,28 @@ sub do_z2h
         $is_euc ?
             $euc :
         $utf8_on ?
-            Encode::decode('euc-jp', $euc) :
-            Encode::encode($self->extra_args, Encode::decode('euc-jp', $euc))
+            $euc_encoding->decode($euc) :
+            $encoding->encode($euc_encoding->decode($euc))
     );   
 }
 
 sub z2h
 {
     my $self = _object(shift);
+    my $code = shift;
+
     require Encode::JP::H2Z;
+
+    local $self->{__euc} = Encode::find_encoding('euc-jp');
+    my $encoding = Encode::find_encoding( $code );
+    if (! $encoding) {
+        Carp::confess("Could not find encoding by the name of $encoding");
+    }
+    local $self->{__encoding} = $encoding;
+
     $self->visit_method('z2h');
-    $self->extra_args($_[0]);
-    $self->visit($_[1]);
+    $self->extra_args($code);
+    $self->visit($_[0]);
 }
 
 1;
