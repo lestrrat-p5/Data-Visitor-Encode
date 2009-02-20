@@ -1,6 +1,9 @@
 Changes
 =======
 
+0.10004 - 20 Feb 2009
+    - s/Squirrel/Any::Moose/g;
+
 0.10003 - 17 Feb 2009
     - Removed check for "do_$method". They should exist!
     - Opt to use Encode::Encoding object rather than calling encode()/decode()
