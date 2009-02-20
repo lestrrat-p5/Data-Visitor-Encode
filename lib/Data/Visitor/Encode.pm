@@ -4,10 +4,11 @@
 # All rights reserved.
 
 package Data::Visitor::Encode;
-use Squirrel; # only because Data::Visitor uses it :)
+use Any::Moose;
+use Encode();
+use Scalar::Util ();
 
 extends 'Data::Visitor';
-use Encode();
 
 our $VERSION = '0.10003';
 
@@ -22,8 +23,7 @@ has 'extra_args' => (
 
 __PACKAGE__->meta->make_immutable;
 
-no Mouse;
-use Scalar::Util qw(reftype blessed);
+no Any::Moose;
 
 sub _object { ref $_[0] ? $_[0] : $_[0]->new }
 
@@ -61,11 +61,11 @@ sub visit_object
 {
     my ($self, $data) = @_;
 
-    my $type = lc (reftype $data);
+    my $type = lc (Scalar::Util::reftype($data));
     my $method = "visit_$type";
     my $ret    = $self->$method($data);
 
-    return bless $ret, blessed $data;
+    return bless $ret, Scalar::Util::blessed($data);
 }
 
 sub visit_value

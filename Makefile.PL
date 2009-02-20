@@ -8,6 +8,7 @@ use inc::Module::Install;
 name 'Data-Visitor-Encode';
 all_from 'lib/Data/Visitor/Encode.pm';
 
+requires 'Any::Moose' => '0.04';
 requires 'Encode';
 requires 'Data::Visitor', 0.18;
 requires 'Scalar::Util';
