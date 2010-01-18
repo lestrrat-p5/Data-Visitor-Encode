@@ -1,6 +1,10 @@
 Changes
 =======
 
+0.10005 - 18 Jan 2009
+    - fix tests
+    - upstream module Data::Visitor is now Moose, so use Moose
+
 0.10004 - 20 Feb 2009
     - s/Squirrel/Any::Moose/g;
 
