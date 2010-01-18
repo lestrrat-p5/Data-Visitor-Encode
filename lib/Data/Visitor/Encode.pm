@@ -1,10 +1,6 @@
-# $Id$
-#
-# Copyright (c) 2006 Daisuke Maki <daisuke@endeworks.jp>
-# All rights reserved.
 
 package Data::Visitor::Encode;
-use Any::Moose;
+use Moose;
 use Encode();
 use Scalar::Util ();
 
@@ -23,7 +19,7 @@ has 'extra_args' => (
 
 __PACKAGE__->meta->make_immutable;
 
-no Any::Moose;
+no Moose;
 
 sub _object { ref $_[0] ? $_[0] : $_[0]->new }
 
