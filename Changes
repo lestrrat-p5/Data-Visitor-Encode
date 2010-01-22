@@ -1,6 +1,9 @@
 Changes
 =======
 
+0.10006 - 22 Jan 2009
+    - Deprecation warning. Use Data::Recursive::Encode instead
+
 0.10005 - 18 Jan 2009
     - fix tests
     - upstream module Data::Visitor is now Moose, so use Moose

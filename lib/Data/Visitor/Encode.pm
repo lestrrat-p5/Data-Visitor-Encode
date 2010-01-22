@@ -6,7 +6,7 @@ use Scalar::Util ();
 
 extends 'Data::Visitor';
 
-our $VERSION = '0.10005';
+our $VERSION = '0.10006';
 
 has 'visit_method' => (
     is => 'rw',
@@ -290,6 +290,14 @@ Data::Visitor::Encode - Encode/Decode Values In A Structure
   $dev->decode('euc-jp', \%hash); # now strings are back in unicode
   $dev->utf8_on(\%hash);
   $dev->utf8_off(\%hash);
+
+=head1 DEPRECATION WARNING 
+
+In all honesty, this module is a bit too much for what it's doing.
+Please checkout L<Data::Recursive::Encode> for a faster implementation
+with less dependencies.
+
+I'll support the module for a while, but be advised that I will probably deprecate it sometime in the future
 
 =head1 DESCRIPTION
 
