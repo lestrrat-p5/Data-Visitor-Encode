@@ -11,5 +11,4 @@ requires 'Scalar::Util';
 test_requires 'Test::More';
 test_requires 'Test::Exception';
 
-auto_install;
 WriteAll;
