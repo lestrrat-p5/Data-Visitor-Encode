@@ -6,7 +6,7 @@ use Scalar::Util ();
 
 extends 'Data::Visitor';
 
-our $VERSION = '0.10006';
+our $VERSION = '0.10007';
 
 has 'visit_method' => (
     is => 'rw',

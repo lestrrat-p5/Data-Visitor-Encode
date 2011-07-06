@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.10007 - 07 Jul 2011
+    - This module is now DEPRECATED. Use Data::Recursive::Encode instead.
+        * This module will not be maintained, and will be removed from
+          CPAN by the end of 2011
+    - Fix to check defined-ness in visit_scalar (rt #69306)
+
 0.10006 - 22 Jan 2009
     - Deprecation warning. Use Data::Recursive::Encode instead
 
