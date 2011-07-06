@@ -33,7 +33,7 @@ sub visit_scalar
     my ($self, $ref) = @_;
 
     my $ret = $self->visit_value($$ref);
-    if ($ret) {
+    if (defined $ret) {
         return \$ret;
     }
     return undef;
@@ -278,10 +278,11 @@ __END__
 
 =head1 NAME
 
-Data::Visitor::Encode - Encode/Decode Values In A Structure
+Data::Visitor::Encode - Encode/Decode Values In A Structure (DEPRECATED)
 
 =head1 SYNOPSIS
 
+  # THIS MODULE IS NOW DEPRECATED. Use Data::Recursive::Encode instead
   use Data::Visitor::Encode;
 
   my $dev = Data::Visitor::Encode->new();
@@ -291,13 +292,11 @@ Data::Visitor::Encode - Encode/Decode Values In A Structure
   $dev->utf8_on(\%hash);
   $dev->utf8_off(\%hash);
 
-=head1 DEPRECATION WARNING 
+=head1 DEPRECATION ALERT 
 
-In all honesty, this module is a bit too much for what it's doing.
-Please checkout L<Data::Recursive::Encode> for a faster implementation
-with less dependencies.
+This module has been DEPRECATED in favor of L<Data::Recursive::Encode>. Bug reports will not be acted upon, and the module will cease to exist from CPAN by the end of year 2011.
 
-I'll support the module for a while, but be advised that I will probably deprecate it sometime in the future
+You've been warned (since 2009)
 
 =head1 DESCRIPTION
 
